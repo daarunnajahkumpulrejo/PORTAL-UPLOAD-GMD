@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Upload Dokumentasi | Daarun Najah</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  font-family:Arial,sans-serif;
+  background:linear-gradient(135deg,#e8f5e9,#f8fff9);
+}
+
+.card{
+  width:100%;
+  max-width:430px;
+  background:#fff;
+  padding:28px;
+  border-radius:24px;
+  box-shadow:0 15px 40px rgba(0,0,0,.10);
+}
+
+.logo{
+  width:72px;
+  height:72px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:20px;
+  background:#1b5e20;
+  font-size:36px;
+}
+
+h1{
+  text-align:center;
+  color:#1b5e20;
+  margin:16px 0 8px;
+  font-size:24px;
+}
+
+.subtitle{
+  text-align:center;
+  color:#777;
+  font-size:14px;
+  line-height:1.6;
+  margin-bottom:25px;
+}
+
+.upload-box{
+  border:2px dashed #9bc49f;
+  border-radius:18px;
+  padding:25px 15px;
+  text-align:center;
+  background:#f8fff8;
+}
+
+.upload-icon{
+  font-size:40px;
+  margin-bottom:10px;
+}
+
+input[type=file]{
+  width:100%;
+  margin-top:15px;
+}
+
+.file-info{
+  margin-top:12px;
+  font-size:13px;
+  color:#555;
+  word-break:break-word;
+}
+
+button{
+  width:100%;
+  border:0;
+  border-radius:14px;
+  padding:15px;
+  margin-top:20px;
+  background:#1b5e20;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:disabled{
+  background:#999;
+}
+
+.progress{
+  display:none;
+  width:100%;
+  height:8px;
+  margin-top:18px;
+  border-radius:20px;
+  overflow:hidden;
+  background:#e0e0e0;
+}
+
+.progress-bar{
+  width:0%;
+  height:100%;
+  background:#1b5e20;
+  transition:.2s;
+}
+
+#status{
+  text-align:center;
+  margin-top:18px;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.success{
+  color:#1b5e20;
+}
+
+.error{
+  color:#c62828;
+}
+
+.footer{
+  text-align:center;
+  margin-top:20px;
+  font-size:11px;
+  color:#999;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+  <div class="logo">📸</div>
+
+  <h1>Upload Dokumentasi</h1>
+
+  <div class="subtitle">
+    Pilih foto atau video dari HP kamu.
+    <br>
+    File akan langsung dikirim ke Google Drive.
+  </div>
+
+  <div class="upload-box">
+
+    <div class="upload-icon">📁</div>
+
+    <strong>Pilih Foto / Video</strong>
+
+    <br>
+
+    <small>Dokumentasi LPQ Daarun Najah</small>
+
+    <input
+      type="file"
+      id="fileInput"
+      accept="image/*,video/*"
+    >
+
+    <div
+      id="fileInfo"
+      class="file-info">
+    </div>
+
+  </div>
+
+  <div
+    class="progress"
+    id="progress">
+
+    <div
+      class="progress-bar"
+      id="progressBar">
+    </div>
+
+  </div>
+
+  <button
+    id="uploadBtn"
+    onclick="uploadFile()">
+
+    UPLOAD SEKARANG
+
+  </button>
+
+  <div id="status"></div>
+
+  <div class="footer">
+    LPQ Daarun Najah • Kumpulrejo
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================================
+   API GOOGLE APPS SCRIPT
+========================================= */
+
+const API_URL =
+"https://script.google.com/macros/s/AKfycbz-f7lNJWJBO1t6vp52PS_ZU-x5smwD-p8IkvNcTUl4lRGoSf1l82JmlgK3llHt2rMjZA/exec";
+
+
+const fileInput =
+document.getElementById("fileInput");
+
+const fileInfo =
+document.getElementById("fileInfo");
+
+const uploadBtn =
+document.getElementById("uploadBtn");
+
+const status =
+document.getElementById("status");
+
+const progress =
+document.getElementById("progress");
+
+const progressBar =
+document.getElementById("progressBar");
+
+
+fileInput.addEventListener("change",function(){
+
+  if(!this.files.length){
+
+    fileInfo.textContent="";
+    return;
+
+  }
+
+  const file=this.files[0];
+
+  fileInfo.innerHTML =
+    "📎 "+file.name+
+    "<br>"+
+    formatSize(file.size);
+
+});
+
+
+function formatSize(bytes){
+
+  if(bytes < 1024)
+    return bytes+" B";
+
+  if(bytes < 1024*1024)
+    return (bytes/1024).toFixed(1)+" KB";
+
+  return (bytes/1024/1024).toFixed(2)+" MB";
+
+}
+
+
+function uploadFile(){
+
+  const file=fileInput.files[0];
+
+  if(!file){
+
+    status.className="error";
+
+    status.textContent=
+      "⚠️ Silakan pilih file terlebih dahulu.";
+
+    return;
+
+  }
+
+  /* Batas sederhana */
+
+  if(file.size > 20 * 1024 * 1024){
+
+    status.className="error";
+
+    status.innerHTML=
+      "❌ File terlalu besar.<br>"+
+      "Maksimal 20 MB untuk versi ini.";
+
+    return;
+
+  }
+
+  uploadBtn.disabled=true;
+
+  uploadBtn.textContent="⏳ MENGUPLOAD...";
+
+  progress.style.display="block";
+
+  progressBar.style.width="10%";
+
+  status.className="";
+
+  status.textContent=
+    "Menyiapkan file...";
+
+
+  const reader=new FileReader();
+
+
+  reader.onload=function(event){
+
+    progressBar.style.width="35%";
+
+    status.textContent=
+      "Mengirim file ke Google Drive...";
+
+
+    const base64 =
+      event.target.result.split(",")[1];
+
+
+    const payload={
+
+      file:base64,
+
+      fileName:file.name,
+
+      mimeType:file.type
+
+    };
+
+
+    fetch(API_URL,{
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":
+        "text/plain;charset=utf-8"
+      },
+
+      body:JSON.stringify(payload)
+
+    })
+
+    .then(response=>response.json())
+
+    .then(result=>{
+
+      progressBar.style.width="100%";
+
+
+      if(result.success){
+
+        status.className="success";
+
+        status.innerHTML=
+          "✅ <strong>Upload berhasil!</strong><br>"+
+          "File sudah masuk ke Google Drive.";
+
+        fileInput.value="";
+
+        fileInfo.textContent="";
+
+      }else{
+
+        throw new Error(
+          result.message ||
+          "Upload gagal."
+        );
+
+      }
+
+    })
+
+    .catch(error=>{
+
+      status.className="error";
+
+      status.innerHTML=
+        "❌ Upload gagal.<br>"+
+        error.message;
+
+    })
+
+    .finally(()=>{
+
+      uploadBtn.disabled=false;
+
+      uploadBtn.textContent=
+        "UPLOAD SEKARANG";
+
+    });
+
+  };
+
+
+  reader.onerror=function(){
+
+    uploadBtn.disabled=false;
+
+    uploadBtn.textContent=
+      "UPLOAD SEKARANG";
+
+    status.className="error";
+
+    status.textContent=
+      "❌ File tidak dapat dibaca.";
+
+  };
+
+
+  reader.readAsDataURL(file);
+
+}
+
+</script>
+
+</body>
+</html>
